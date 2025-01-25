@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>알림 설정</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center">카카오워크 알림 설정</h1>
+    <form id="notificationForm" class="mt-4">
+      <div class="form-group">
+        <input type="text" id="loginId" class="form-control" placeholder="아이디" required>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" class="form-control" placeholder="비밀번호" required>
+      </div>
+      <div class="form-group">
+        <select id="platform" class="form-control" required>
+          <option value="" disabled selected>플랫폼 선택</option>
+          <option value="KAKAOWORK">카카오워크</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <input type="text" id="platformUserId" class="form-control" placeholder="플랫폼 계정" required>
+      </div>
+      <div class="button-group text-center">
+        <button id="allow" class="btn btn-primary">제출</button>
+        <button id="refusal" class="btn btn-secondary">취소</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('refusal').addEventListener('click', event => {
+        event.preventDefault();
+        callApi('N');
+    });
+
+    document.getElementById('allow').addEventListener('click', function(event) {
+      event.preventDefault(); // 기본 동작 방지 (예: 폼 제출)
+      callApi('Y');
+    });
+
+    function callApi(isReceivedNotification) {
+      // 입력 필드 값 가져오기
+      const loginId = document.getElementById('loginId').value;
+      const password = document.getElementById('password').value;
+      const platform = document.getElementById('platform').value;
+      const platformUserId = document.getElementById('platformUserId').value;
+  
+      // API 호출을 위한 데이터
+      const requestData = {
+        loginId: loginId,
+        password: password,
+        platform: platform,
+        platformUserId: platformUserId,
+        isReceiveNotification: isReceivedNotification
+      };
+  
+      // API 호출
+      fetch('http://localhost:3000/notification', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error();
+            }
+        })
+        .then(data => {
+          console.log('API 응답:', data);
+          alert('제출 성공!');
+        })
+        .catch(error => {
+          console.error('오류 발생:', error);
+          alert('제출 중 오류가 발생했습니다.');
+        });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,974 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model assignee {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt?
+  project_id BigInt?
+  project    project? @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_assignee_project_2")
+  n4user     n4user?  @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_assignee_user_1")
+  issue      issue[]
+
+  @@index([project_id], map: "ix_assignee_project_2")
+  @@index([user_id], map: "ix_assignee_user_1")
+}
+
+model attachment {
+  id             BigInt    @id @default(autoincrement())
+  name           String?   @db.VarChar(255)
+  hash           String?   @db.VarChar(255)
+  container_type String?   @db.VarChar(20)
+  mime_type      String?   @db.VarChar(255)
+  size           BigInt?
+  container_id   BigInt
+  created_date   DateTime? @db.DateTime(0)
+  owner_login_id String?   @db.VarChar(255)
+
+  @@index([container_type, container_id], map: "ix_attachment_container")
+  @@index([created_date], map: "ix_attachment_created_date")
+  @@index([owner_login_id], map: "ix_attachment_owner_login_id")
+}
+
+model comment_thread {
+  dtype                 String                  @db.VarChar(10)
+  id                    BigInt                  @id @default(autoincrement())
+  author_id             BigInt?
+  author_login_id       String?                 @db.VarChar(255)
+  author_name           String?                 @db.VarChar(255)
+  state                 String?                 @db.VarChar(6)
+  created_date          DateTime?               @db.DateTime(0)
+  pull_request_id       BigInt?
+  project_id            BigInt?
+  prev_commit_id        String?                 @db.VarChar(255)
+  commit_id             String?                 @db.VarChar(255)
+  path                  String?                 @db.VarChar(255)
+  start_side            String?                 @db.VarChar(1)
+  start_line            Int?
+  start_column          Int?
+  end_side              String?                 @db.VarChar(1)
+  end_line              Int?
+  end_column            Int?
+  project               project?                @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_comment_thread_project_4")
+  pull_request          pull_request?           @relation(fields: [pull_request_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_comment_thread_pullRequest_3")
+  comment_thread_n4user comment_thread_n4user[]
+  review_comment        review_comment[]
+
+  @@index([project_id], map: "ix_comment_thread_project_4")
+  @@index([pull_request_id], map: "ix_comment_thread_pullRequest_3")
+}
+
+model comment_thread_n4user {
+  comment_thread_id BigInt
+  n4user_id         BigInt
+  comment_thread    comment_thread @relation(fields: [comment_thread_id], references: [id], onUpdate: Restrict, map: "fk_comment_thread_n4user_comment_thread_01")
+  n4user            n4user         @relation(fields: [n4user_id], references: [id], onUpdate: Restrict, map: "fk_comment_thread_n4user_n4user_02")
+
+  @@id([comment_thread_id, n4user_id])
+  @@index([n4user_id], map: "fk_comment_thread_n4user_n4user_02")
+}
+
+model commit_comment {
+  id              BigInt    @id @default(autoincrement())
+  project_id      BigInt?
+  path            String?   @db.VarChar(255)
+  line            Int?
+  side            String?   @db.VarChar(1)
+  contents        String?   @db.LongText
+  created_date    DateTime? @db.DateTime(0)
+  author_id       BigInt?
+  author_login_id String?   @db.VarChar(255)
+  author_name     String?   @db.VarChar(255)
+  commit_id       String?   @db.VarChar(255)
+  project         project?  @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_commit_comment_project_5")
+
+  @@index([project_id], map: "ix_commit_comment_project_5")
+}
+
+model email {
+  id      BigInt   @id @default(autoincrement())
+  user_id BigInt?
+  email   String?  @db.VarChar(255)
+  valid   Boolean? @default(false)
+  token   String?  @db.VarChar(255)
+
+  @@unique([email, valid], map: "uq_email_email_valid")
+  @@index([user_id], map: "ix_email_user_6")
+}
+
+model favorite_issue {
+  id       BigInt  @id @default(autoincrement())
+  user_id  BigInt?
+  issue_id BigInt?
+  issue    issue?  @relation(fields: [issue_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_favorite_issue_issue")
+  n4user   n4user? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_favorite_issue_user")
+
+  @@unique([user_id, issue_id], map: "uq_favorite_issue_user_id_issue_id_1")
+  @@index([issue_id], map: "ix_favorite_issue_project_2")
+  @@index([user_id], map: "ix_favorite_issue_user_1")
+}
+
+model favorite_organization {
+  id                BigInt        @id @default(autoincrement())
+  user_id           BigInt?
+  organization_id   BigInt?
+  organization_name String?       @db.VarChar(255)
+  organization      organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_favorite_organization_organization")
+  n4user            n4user?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_favorite_organization_user")
+
+  @@unique([user_id, organization_id], map: "uq_favorite_organization_user_id_organization_id_1")
+  @@index([organization_id], map: "ix_favorite_organization_organization_2")
+  @@index([user_id], map: "ix_favorite_organization_user_1")
+}
+
+model favorite_project {
+  id           BigInt   @id @default(autoincrement())
+  user_id      BigInt?
+  project_id   BigInt?
+  owner        String?  @db.VarChar(255)
+  project_name String?  @db.VarChar(255)
+  project      project? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_favorite_project_project")
+  n4user       n4user?  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_favorite_project_user")
+
+  @@unique([user_id, project_id], map: "uq_favorite_project_user_id_project_id_1")
+  @@index([project_id], map: "ix_favorite_project_project_2")
+  @@index([user_id], map: "ix_favorite_project_user_1")
+}
+
+model issue {
+  id                   BigInt              @id @default(autoincrement())
+  title                String?             @db.VarChar(255)
+  body                 String?             @db.LongText
+  created_date         DateTime?           @db.DateTime(0)
+  updated_date         DateTime?           @db.DateTime(0)
+  author_id            BigInt?
+  author_login_id      String?             @db.VarChar(255)
+  author_name          String?             @db.VarChar(255)
+  project_id           BigInt?
+  number               BigInt?
+  num_of_comments      Int?
+  state                Int?
+  due_date             DateTime?           @db.DateTime(0)
+  milestone_id         BigInt?
+  assignee_id          BigInt?
+  history              String?             @db.LongText
+  parent_id            BigInt?
+  weight               Int?                @default(0) @db.TinyInt
+  updated_by_author_id BigInt?
+  is_draft             Boolean?            @default(false)
+  favorite_issue       favorite_issue[]
+  assignee             assignee?           @relation(fields: [assignee_id], references: [id], map: "fk_issue_assignee_9")
+  milestone            milestone?          @relation(fields: [milestone_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_issue_milestone_8")
+  issue                issue?              @relation("issueToissue", fields: [parent_id], references: [id], onUpdate: Restrict, map: "fk_issue_parent_id_01")
+  other_issue          issue[]             @relation("issueToissue")
+  project              project?            @relation(fields: [project_id], references: [id], onDelete: Cascade, map: "fk_issue_project_7")
+  issue_comment        issue_comment[]
+  issue_event          issue_event[]
+  issue_issue_label    issue_issue_label[]
+  issue_sharer         issue_sharer[]
+  issue_voter          issue_voter[]
+  recent_issue         recent_issue[]
+
+  @@unique([project_id, number], map: "uq_issue_1")
+  @@index([assignee_id], map: "ix_issue_assignee_9")
+  @@index([author_id, state], map: "ix_issue_author_id_state")
+  @@index([created_date], map: "ix_issue_created_date")
+  @@index([weight, is_draft, number, created_date], map: "ix_issue_is_draft_1")
+  @@index([is_draft, author_login_id, project_id], map: "ix_issue_is_draft_2")
+  @@index([milestone_id], map: "ix_issue_milestone_8")
+  @@index([parent_id], map: "ix_issue_parent_id")
+  @@index([project_id], map: "ix_issue_project_7")
+  @@index([weight], map: "ix_issue_weight")
+}
+
+model issue_comment {
+  id                  BigInt                @id @default(autoincrement())
+  contents            String?               @db.LongText
+  created_date        DateTime?             @db.DateTime(0)
+  author_id           BigInt?
+  author_login_id     String?               @db.VarChar(255)
+  author_name         String?               @db.VarChar(255)
+  issue_id            BigInt?
+  project_id          BigInt
+  parent_comment_id   BigInt?
+  issue               issue?                @relation(fields: [issue_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_issue_comment_issue_10")
+  issue_comment       issue_comment?        @relation("issue_commentToissue_comment", fields: [parent_comment_id], references: [id], onUpdate: Restrict, map: "fk_issue_comment_parent_id_01")
+  other_issue_comment issue_comment[]       @relation("issue_commentToissue_comment")
+  issue_comment_voter issue_comment_voter[]
+
+  @@index([author_id], map: "ix_issue_comment_author_id")
+  @@index([issue_id], map: "ix_issue_comment_issue_10")
+  @@index([project_id], map: "ix_issue_comment_project_id")
+  @@index([parent_comment_id], map: "ix_issue_parent_id")
+}
+
+model issue_comment_voter {
+  issue_comment_id BigInt
+  user_id          BigInt
+  issue_comment    issue_comment @relation(fields: [issue_comment_id], references: [id], onUpdate: Restrict, map: "fk_issue_comment_voter_issue_comment_01")
+  n4user           n4user        @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_issue_comment_voter_n4user_02")
+
+  @@id([issue_comment_id, user_id])
+  @@index([user_id], map: "ix_issue_comment_voter_user_id")
+}
+
+model issue_event {
+  id              BigInt    @id @default(autoincrement())
+  created         DateTime? @db.DateTime(0)
+  sender_login_id String?   @db.VarChar(255)
+  sender_email    String?   @db.VarChar(255)
+  issue_id        BigInt?
+  event_type      String?   @db.VarChar(34)
+  old_value       String?   @db.LongText
+  new_value       String?   @db.LongText
+  issue           issue?    @relation(fields: [issue_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_issue_event_issue_11")
+
+  @@index([issue_id], map: "ix_issue_event_issue_11")
+}
+
+model issue_issue_label {
+  issue_id       BigInt
+  issue_label_id BigInt
+  issue          issue       @relation(fields: [issue_id], references: [id], onUpdate: Restrict, map: "fk_issue_issue_label_issue_01")
+  issue_label    issue_label @relation(fields: [issue_label_id], references: [id], onUpdate: Restrict, map: "fk_issue_issue_label_issue_label_02")
+
+  @@id([issue_id, issue_label_id])
+  @@index([issue_label_id], map: "fk_issue_issue_label_issue_label_02")
+}
+
+model issue_label {
+  id                   BigInt                @id @default(autoincrement())
+  category_id          BigInt?
+  color                String?               @db.VarChar(255)
+  name                 String?               @db.VarChar(255)
+  project_id           BigInt?
+  issue_issue_label    issue_issue_label[]
+  issue_label_category issue_label_category? @relation(fields: [category_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_issue_label_category_12")
+  project              project?              @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_issue_label_project_13")
+  posting_issue_label  posting_issue_label[]
+
+  @@index([category_id], map: "ix_issue_label_category_12")
+  @@index([project_id], map: "ix_issue_label_project_13")
+}
+
+model issue_label_category {
+  id           BigInt        @id @default(autoincrement())
+  project_id   BigInt?
+  name         String?       @db.VarChar(255)
+  is_exclusive Boolean?      @default(false)
+  issue_label  issue_label[]
+  project      project?      @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_issue_label_category_project_14")
+
+  @@index([project_id], map: "ix_issue_label_category_project_14")
+}
+
+model issue_sharer {
+  id       BigInt    @id @default(autoincrement())
+  created  DateTime? @db.Date
+  login_id String?   @db.VarChar(255)
+  user_id  BigInt?
+  issue_id BigInt?
+  issue    issue?    @relation(fields: [issue_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_issue_sharer_issue")
+  n4user   n4user?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_issue_sharer_user")
+
+  @@index([issue_id], map: "ix_issue_sharer_issue_id")
+  @@index([login_id], map: "ix_issue_sharer_login_id")
+  @@index([user_id], map: "ix_issue_sharer_user_id")
+}
+
+model issue_voter {
+  issue_id BigInt
+  user_id  BigInt
+  issue    issue  @relation(fields: [issue_id], references: [id], onUpdate: Restrict, map: "fk_issue_voter_issue_01")
+  n4user   n4user @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_issue_voter_n4user_02")
+
+  @@id([issue_id, user_id])
+  @@index([user_id], map: "ix_issue_voter_user_id")
+}
+
+model label {
+  id            BigInt          @id @default(autoincrement())
+  category      String?         @db.VarChar(255)
+  name          String?         @db.VarChar(255)
+  project_label project_label[]
+
+  @@unique([category, name], map: "uq_label_1")
+}
+
+model linked_account {
+  id                 BigInt           @id @default(autoincrement())
+  user_credential_id BigInt?
+  provider_user_id   String?          @db.VarChar(255)
+  provider_key       String?          @db.VarChar(255)
+  user_credential    user_credential? @relation(fields: [user_credential_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_linked_account_user_1")
+
+  @@index([user_credential_id], map: "ix_linked_account_user_credential_1")
+}
+
+model mention {
+  id            BigInt  @id @default(autoincrement())
+  resource_type String? @db.VarChar(20)
+  resource_id   String? @db.VarChar(255)
+  user_id       BigInt?
+  n4user        n4user? @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_mention_user_15")
+
+  @@index([resource_type], map: "ix_mention_resource_type")
+  @@index([user_id], map: "ix_mention_user_15")
+}
+
+model milestone {
+  id         BigInt    @id @default(autoincrement())
+  title      String?   @db.VarChar(255)
+  due_date   DateTime? @db.DateTime(0)
+  contents   String?   @db.LongText
+  state      Int?
+  project_id BigInt?
+  issue      issue[]
+  project    project?  @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_milestone_project_16")
+
+  @@unique([project_id, title], map: "uq_milestone_1")
+  @@index([project_id], map: "ix_milestone_project_16")
+}
+
+model n4user {
+  id                                               BigInt                         @id @default(autoincrement())
+  name                                             String?                        @db.VarChar(255)
+  login_id                                         String?                        @unique(map: "uq_n4user_1") @db.VarChar(255)
+  password                                         String?                        @db.VarChar(255)
+  password_salt                                    String?                        @db.VarChar(255)
+  email                                            String?                        @db.VarChar(255)
+  remember_me                                      Boolean?                       @default(false)
+  state                                            String?                        @db.VarChar(7)
+  last_state_modified_date                         DateTime?                      @db.DateTime(0)
+  created_date                                     DateTime?                      @db.DateTime(0)
+  lang                                             String?                        @db.VarChar(255)
+  token                                            String?                        @unique(map: "uq_n4user_token") @db.VarChar(255)
+  is_guest                                         Boolean?                       @default(false)
+  english_name                                     String?                        @db.VarChar(255)
+  is_receive_notification                          Boolean?                       @default(false)
+  assignee                                         assignee[]
+  comment_thread_n4user                            comment_thread_n4user[]
+  favorite_issue                                   favorite_issue[]
+  favorite_organization                            favorite_organization[]
+  favorite_project                                 favorite_project[]
+  issue_comment_voter                              issue_comment_voter[]
+  issue_sharer                                     issue_sharer[]
+  issue_voter                                      issue_voter[]
+  mention                                          mention[]
+  n4user_notification_platform                     n4user_notification_platform[]
+  notification_event_n4user                        notification_event_n4user[]
+  organization_user                                organization_user[]
+  project_transfer                                 project_transfer[]
+  project_user                                     project_user[]
+  pull_request_pull_request_contributor_idTon4user pull_request[]                 @relation("pull_request_contributor_idTon4user")
+  pull_request_pull_request_receiver_idTon4user    pull_request[]                 @relation("pull_request_receiver_idTon4user")
+  pull_request_reviewers                           pull_request_reviewers[]
+  recent_issue                                     recent_issue[]
+  recently_visited_projects                        recently_visited_projects[]
+  site_admin                                       site_admin[]
+  unwatch                                          unwatch[]
+  user_credential                                  user_credential[]
+  user_enrolled_organization                       user_enrolled_organization[]
+  user_enrolled_project                            user_enrolled_project[]
+  user_project_notification                        user_project_notification[]
+  user_setting                                     user_setting[]
+  user_verification                                user_verification[]
+  watch                                            watch[]
+
+  @@index([is_guest], map: "ix_n4user_is_guest")
+}
+
+model n4user_notification_platform {
+  id               BigInt   @id @default(autoincrement())
+  n4user_id        BigInt
+  platform         String   @db.VarChar(20)
+  platform_user_id String   @db.VarChar(100)
+  is_used          Boolean? @default(false)
+  n4user           n4user   @relation(fields: [n4user_id], references: [id], onUpdate: Restrict, map: "fk_n4user_notification_platform_n4user_01")
+
+  @@index([n4user_id], map: "fk_n4user_notification_platform_n4user_01")
+}
+
+model notification_event {
+  id                        BigInt                      @id @default(autoincrement())
+  title                     String?                     @db.VarChar(255)
+  sender_id                 BigInt?
+  created                   DateTime?                   @db.DateTime(0)
+  resource_type             String?                     @db.VarChar(20)
+  resource_id               String?                     @db.VarChar(255)
+  event_type                String?                     @db.VarChar(34)
+  old_value                 String?                     @db.LongText
+  new_value                 String?                     @db.LongText
+  notification_event_n4user notification_event_n4user[]
+  notification_mail         notification_mail[]
+
+  @@index([created], map: "ix_notification_event_created")
+}
+
+model notification_event_n4user {
+  notification_event_id BigInt
+  n4user_id             BigInt
+  n4user                n4user             @relation(fields: [n4user_id], references: [id], onUpdate: Restrict, map: "fk_notification_event_n4user_n4user_02")
+  notification_event    notification_event @relation(fields: [notification_event_id], references: [id], onUpdate: Restrict, map: "fk_notification_event_n4user_notification_event_01")
+
+  @@id([notification_event_id, n4user_id])
+  @@index([n4user_id], map: "fk_notification_event_n4user_n4user_02")
+}
+
+model notification_mail {
+  id                    BigInt              @id @default(autoincrement())
+  notification_event_id BigInt?
+  notification_event    notification_event? @relation(fields: [notification_event_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_notification_mail_notificationEvent_17")
+
+  @@index([notification_event_id], map: "ix_notification_mail_notificationEvent_17")
+}
+
+model organization {
+  id                         BigInt                       @id @default(autoincrement())
+  name                       String?                      @db.VarChar(255)
+  created                    DateTime?                    @db.DateTime(0)
+  descr                      String?                      @db.VarChar(255)
+  favorite_organization      favorite_organization[]
+  organization_user          organization_user[]
+  project                    project[]
+  user_enrolled_organization user_enrolled_organization[]
+}
+
+model organization_user {
+  id              BigInt        @id @default(autoincrement())
+  user_id         BigInt?
+  organization_id BigInt?
+  role_id         BigInt?
+  organization    organization? @relation(fields: [organization_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_organization_user_organization_19")
+  role            role?         @relation(fields: [role_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_organization_user_role_20")
+  n4user          n4user?       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_organization_user_user_18")
+
+  @@index([organization_id], map: "ix_organization_user_organization_19")
+  @@index([role_id], map: "ix_organization_user_role_20")
+  @@index([user_id], map: "ix_organization_user_user_18")
+}
+
+model original_email {
+  id            BigInt    @id @default(autoincrement())
+  message_id    String?   @unique(map: "uq_original_email_message_id") @db.VarChar(255)
+  resource_type String?   @db.VarChar(20)
+  resource_id   String?   @db.VarChar(255)
+  handled_date  DateTime? @db.DateTime(0)
+
+  @@unique([resource_type, resource_id], map: "uq_original_email_1")
+  @@index([resource_id], map: "ix_original_email_resource_id")
+}
+
+model play_evolutions {
+  id            Int      @id
+  hash          String   @db.VarChar(255)
+  applied_at    DateTime @default(now()) @db.Timestamp(0)
+  apply_script  String?  @db.Text
+  revert_script String?  @db.Text
+  state         String?  @db.VarChar(255)
+  last_problem  String?  @db.Text
+}
+
+model posting {
+  id                   BigInt                @id @default(autoincrement())
+  title                String?               @db.VarChar(255)
+  body                 String?               @db.LongText
+  created_date         DateTime?             @db.DateTime(0)
+  updated_date         DateTime?             @db.DateTime(0)
+  author_id            BigInt?
+  author_login_id      String?               @db.VarChar(255)
+  author_name          String?               @db.VarChar(255)
+  project_id           BigInt?
+  number               BigInt?
+  num_of_comments      Int?
+  notice               Boolean?              @default(false)
+  readme               Boolean?              @default(false)
+  history              String?               @db.LongText
+  parent_id            BigInt?
+  updated_by_author_id BigInt?
+  posting              posting?              @relation("postingToposting", fields: [parent_id], references: [id], onUpdate: Restrict, map: "fk_posting_parent_id_01")
+  other_posting        posting[]             @relation("postingToposting")
+  project              project?              @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_posting_project_21")
+  posting_comment      posting_comment[]
+  posting_issue_label  posting_issue_label[]
+
+  @@unique([project_id, number], map: "uq_posting_1")
+  @@index([parent_id], map: "ix_posting_parent_id")
+  @@index([project_id], map: "ix_posting_project_21")
+}
+
+model posting_comment {
+  id                    BigInt            @id @default(autoincrement())
+  contents              String?           @db.LongText
+  created_date          DateTime?         @db.DateTime(0)
+  author_id             BigInt?
+  author_login_id       String?           @db.VarChar(255)
+  author_name           String?           @db.VarChar(255)
+  posting_id            BigInt?
+  project_id            BigInt
+  parent_comment_id     BigInt?
+  posting_comment       posting_comment?  @relation("posting_commentToposting_comment", fields: [parent_comment_id], references: [id], onUpdate: Restrict, map: "fk_posting_comment_parent_id_01")
+  other_posting_comment posting_comment[] @relation("posting_commentToposting_comment")
+  posting               posting?          @relation(fields: [posting_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_posting_comment_posting_22")
+
+  @@index([author_id], map: "ix_posting_comment_author_id")
+  @@index([posting_id], map: "ix_posting_comment_posting_22")
+  @@index([project_id], map: "ix_posting_comment_project_id")
+  @@index([parent_comment_id], map: "ix_posting_parent_id")
+}
+
+model posting_issue_label {
+  posting_id     BigInt
+  issue_label_id BigInt
+  issue_label    issue_label @relation(fields: [issue_label_id], references: [id], onUpdate: Restrict, map: "fk_posting_issue_label_issue_label_02")
+  posting        posting     @relation(fields: [posting_id], references: [id], onUpdate: Restrict, map: "fk_posting_issue_label_posting_01")
+
+  @@id([posting_id, issue_label_id])
+  @@index([issue_label_id], map: "fk_posting_issue_label_issue_label_02")
+}
+
+model project {
+  id                                                 BigInt                      @id @default(autoincrement())
+  name                                               String?                     @db.VarChar(255)
+  overview                                           String?                     @db.VarChar(255)
+  vcs                                                String?                     @db.VarChar(255)
+  siteurl                                            String?                     @db.VarChar(255)
+  owner                                              String?                     @db.VarChar(255)
+  created_date                                       DateTime?                   @db.DateTime(0)
+  last_issue_number                                  BigInt?
+  last_posting_number                                BigInt?
+  original_project_id                                BigInt?
+  last_pushed_date                                   DateTime?                   @db.DateTime(0)
+  default_reviewer_count                             Int?
+  is_using_reviewer_count                            Boolean?                    @default(false)
+  organization_id                                    BigInt?
+  project_scope                                      String?                     @db.VarChar(9)
+  previous_owner_login_id                            String?                     @db.VarChar(255)
+  previous_name                                      String?                     @db.VarChar(255)
+  previous_name_changed_time                         BigInt?
+  is_code_accessible_member_only                     Boolean?                    @default(false)
+  assignee                                           assignee[]
+  comment_thread                                     comment_thread[]
+  commit_comment                                     commit_comment[]
+  favorite_project                                   favorite_project[]
+  issue                                              issue[]
+  issue_label                                        issue_label[]
+  issue_label_category                               issue_label_category[]
+  milestone                                          milestone[]
+  posting                                            posting[]
+  organization                                       organization?               @relation(fields: [organization_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_organization_24")
+  project                                            project?                    @relation("projectToproject", fields: [original_project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_originalProject_23")
+  other_project                                      project[]                   @relation("projectToproject")
+  project_label                                      project_label[]
+  project_menu_setting                               project_menu_setting[]
+  project_pushed_branch                              project_pushed_branch[]
+  project_transfer                                   project_transfer[]
+  project_user                                       project_user[]
+  project_visitation                                 project_visitation[]
+  pull_request_pull_request_from_project_idToproject pull_request[]              @relation("pull_request_from_project_idToproject")
+  pull_request_pull_request_to_project_idToproject   pull_request[]              @relation("pull_request_to_project_idToproject")
+  recent_project                                     recent_project[]
+  title_head                                         title_head[]
+  user_enrolled_project                              user_enrolled_project[]
+  user_project_notification                          user_project_notification[]
+  webhook                                            webhook[]
+
+  @@index([organization_id], map: "ix_project_organization_24")
+  @@index([original_project_id], map: "ix_project_originalProject_23")
+}
+
+model project_label {
+  project_id BigInt
+  label_id   BigInt
+  label      label   @relation(fields: [label_id], references: [id], onUpdate: Restrict, map: "fk_project_label_label_02")
+  project    project @relation(fields: [project_id], references: [id], onUpdate: Restrict, map: "fk_project_label_project_01")
+
+  @@id([project_id, label_id])
+  @@index([label_id], map: "fk_project_label_label_02")
+}
+
+model project_menu_setting {
+  id           BigInt   @id @default(autoincrement())
+  project_id   BigInt?
+  code         Boolean? @default(false)
+  issue        Boolean? @default(false)
+  pull_request Boolean? @default(false)
+  review       Boolean? @default(false)
+  milestone    Boolean? @default(false)
+  board        Boolean? @default(false)
+  project      project? @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_menu_setting_project_25")
+
+  @@index([project_id], map: "ix_project_menu_setting_project_25")
+}
+
+model project_pushed_branch {
+  id          BigInt    @id @default(autoincrement())
+  pushed_date DateTime? @db.DateTime(0)
+  name        String?   @db.VarChar(255)
+  project_id  BigInt?
+  project     project?  @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_pushed_branch_project_39")
+
+  @@index([project_id], map: "ix_project_pushed_branch_project_39")
+}
+
+model project_transfer {
+  id               BigInt    @id @default(autoincrement())
+  sender_id        BigInt?
+  destination      String?   @db.VarChar(255)
+  project_id       BigInt?
+  requested        DateTime? @db.DateTime(0)
+  confirm_key      String?   @db.VarChar(255)
+  accepted         Boolean?  @default(false)
+  new_project_name String?   @db.VarChar(255)
+  project          project?  @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_transfer_project_27")
+  n4user           n4user?   @relation(fields: [sender_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_transfer_sender_26")
+
+  @@index([project_id], map: "ix_project_transfer_project_27")
+  @@index([sender_id], map: "ix_project_transfer_sender_26")
+}
+
+model project_user {
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt?
+  project_id BigInt?
+  role_id    BigInt?
+  project    project? @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_user_project_29")
+  role       role?    @relation(fields: [role_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_user_role_30")
+  n4user     n4user?  @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_user_user_28")
+
+  @@index([project_id], map: "ix_project_user_project_29")
+  @@index([role_id], map: "ix_project_user_role_30")
+  @@index([user_id], map: "ix_project_user_user_28")
+}
+
+model project_visitation {
+  id                           BigInt                     @id @default(autoincrement())
+  project_id                   BigInt?
+  recently_visited_projects_id BigInt?
+  visited                      DateTime?                  @db.DateTime(0)
+  project                      project?                   @relation(fields: [project_id], references: [id], onDelete: Cascade, map: "fk_project_visitation_project_31")
+  recently_visited_projects    recently_visited_projects? @relation(fields: [recently_visited_projects_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_project_visitation_recentlyVisitedProjects_32")
+
+  @@unique([project_id, recently_visited_projects_id], map: "uq_project_visitation_1")
+  @@index([project_id], map: "ix_project_visitation_project_31")
+  @@index([recently_visited_projects_id], map: "ix_project_visitation_recentlyVisitedProjects_32")
+}
+
+model property {
+  id    BigInt  @id @default(autoincrement())
+  name  String? @db.VarChar(25)
+  value String? @db.VarChar(255)
+}
+
+model pull_request {
+  id                                            BigInt                   @id @default(autoincrement())
+  title                                         String?                  @db.VarChar(255)
+  body                                          String?                  @db.LongText
+  to_project_id                                 BigInt?
+  from_project_id                               BigInt?
+  to_branch                                     String?                  @db.VarChar(255)
+  from_branch                                   String?                  @db.VarChar(255)
+  contributor_id                                BigInt?
+  receiver_id                                   BigInt?
+  created                                       DateTime?                @db.DateTime(0)
+  updated                                       DateTime?                @db.DateTime(0)
+  received                                      DateTime?                @db.DateTime(0)
+  state                                         Int?
+  is_conflict                                   Boolean?                 @default(false)
+  is_merging                                    Boolean?                 @default(false)
+  last_commit_id                                String?                  @db.VarChar(255)
+  merged_commit_id_from                         String?                  @db.VarChar(255)
+  merged_commit_id_to                           String?                  @db.VarChar(255)
+  number                                        BigInt?
+  comment_thread                                comment_thread[]
+  n4user_pull_request_contributor_idTon4user    n4user?                  @relation("pull_request_contributor_idTon4user", fields: [contributor_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pull_request_contributor_35")
+  project_pull_request_from_project_idToproject project?                 @relation("pull_request_from_project_idToproject", fields: [from_project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pull_request_fromProject_34")
+  n4user_pull_request_receiver_idTon4user       n4user?                  @relation("pull_request_receiver_idTon4user", fields: [receiver_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pull_request_receiver_36")
+  project_pull_request_to_project_idToproject   project?                 @relation("pull_request_to_project_idToproject", fields: [to_project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pull_request_toProject_33")
+  pull_request_commit                           pull_request_commit[]
+  pull_request_event                            pull_request_event[]
+  pull_request_reviewers                        pull_request_reviewers[]
+
+  @@index([contributor_id], map: "ix_pull_request_contributor_35")
+  @@index([from_project_id], map: "ix_pull_request_fromProject_34")
+  @@index([number], map: "ix_pull_request_number")
+  @@index([receiver_id], map: "ix_pull_request_receiver_36")
+  @@index([to_project_id], map: "ix_pull_request_toProject_33")
+}
+
+model pull_request_commit {
+  id              BigInt        @id @default(autoincrement())
+  pull_request_id BigInt?
+  commit_id       String?       @db.VarChar(255)
+  author_date     DateTime?     @db.DateTime(0)
+  created         DateTime?     @db.DateTime(0)
+  commit_message  String?       @db.LongText
+  commit_short_id String?       @db.VarChar(255)
+  author_email    String?       @db.VarChar(255)
+  state           String?       @db.VarChar(7)
+  pull_request    pull_request? @relation(fields: [pull_request_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pull_request_commit_pullRequest_37")
+
+  @@index([pull_request_id], map: "ix_pull_request_commit_pullRequest_37")
+}
+
+model pull_request_event {
+  id              BigInt        @id @default(autoincrement())
+  sender_login_id String?       @db.VarChar(255)
+  pull_request_id BigInt?
+  event_type      String?       @db.VarChar(34)
+  created         DateTime?     @db.DateTime(0)
+  old_value       String?       @db.LongText
+  new_value       String?       @db.LongText
+  pull_request    pull_request? @relation(fields: [pull_request_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_pull_request_event_pullRequest_38")
+
+  @@index([pull_request_id], map: "ix_pull_request_event_pullRequest_38")
+}
+
+model pull_request_reviewers {
+  pull_request_id BigInt
+  user_id         BigInt
+  n4user          n4user       @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_pull_request_reviewers_n4user_02")
+  pull_request    pull_request @relation(fields: [pull_request_id], references: [id], onUpdate: Restrict, map: "fk_pull_request_reviewers_pull_request_01")
+
+  @@id([pull_request_id, user_id])
+  @@index([user_id], map: "fk_pull_request_reviewers_n4user_02")
+}
+
+model recent_issue {
+  id           BigInt    @id @default(autoincrement())
+  user_id      BigInt?
+  issue_id     BigInt?
+  posting_id   BigInt?
+  title        String?   @db.VarChar(255)
+  url          String?   @db.VarChar(255)
+  created_date DateTime? @db.DateTime(0)
+  issue        issue?    @relation(fields: [issue_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_recent_issue_issue")
+  n4user       n4user?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_recent_issue_user")
+
+  @@unique([user_id, issue_id], map: "uq_recent_issue_user_id_issue_id_1")
+  @@unique([user_id, posting_id], map: "uq_recent_issue_user_id_posting_id_1")
+  @@index([issue_id], map: "fk_recent_issue_issue")
+  @@index([user_id, issue_id], map: "ix_recent_issue_issue_2")
+  @@index([user_id, posting_id], map: "ix_recent_issue_posting_3")
+  @@index([user_id], map: "ix_recent_issue_user_1")
+}
+
+model recent_project {
+  id           BigInt   @id @default(autoincrement())
+  user_id      BigInt?
+  owner        String?  @db.VarChar(255)
+  project_id   BigInt?
+  project_name String?  @db.VarChar(255)
+  project      project? @relation(fields: [project_id], references: [id], onDelete: Cascade, map: "fk_recent_project_project_2")
+
+  @@unique([user_id, project_id], map: "uq_recent_project_1")
+  @@index([project_id], map: "fk_recent_project_project_2")
+}
+
+model recently_visited_projects {
+  id                 BigInt               @id @default(autoincrement())
+  user_id            BigInt?
+  project_visitation project_visitation[]
+  n4user             n4user?              @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_recently_visited_projects_user_40")
+
+  @@index([user_id], map: "ix_recently_visited_projects_user_40")
+}
+
+model review_comment {
+  id              BigInt          @id @default(autoincrement())
+  contents        String?         @db.LongText
+  created_date    DateTime?       @db.DateTime(0)
+  author_id       BigInt?
+  author_login_id String?         @db.VarChar(255)
+  author_name     String?         @db.VarChar(255)
+  thread_id       BigInt?
+  comment_thread  comment_thread? @relation(fields: [thread_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_review_comment_thread_41")
+
+  @@index([thread_id], map: "ix_review_comment_thread_41")
+}
+
+model role {
+  id                BigInt              @id @default(autoincrement())
+  name              String?             @db.VarChar(255)
+  active            Boolean?            @default(false)
+  organization_user organization_user[]
+  project_user      project_user[]
+}
+
+model site_admin {
+  id       BigInt  @id @default(autoincrement())
+  admin_id BigInt?
+  n4user   n4user? @relation(fields: [admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_site_admin_admin_42")
+
+  @@index([admin_id], map: "ix_site_admin_admin_42")
+}
+
+model title_head {
+  id           BigInt   @id @default(autoincrement())
+  project_id   BigInt?
+  head_keyword String?  @db.VarChar(255)
+  frequency    Int?
+  project      project? @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_title_head_project")
+
+  @@index([head_keyword], map: "ix_title_head_head_keyword")
+  @@index([project_id], map: "ix_title_head_project_id")
+}
+
+model unwatch {
+  id            BigInt  @id @default(autoincrement())
+  user_id       BigInt?
+  resource_type String? @db.VarChar(20)
+  resource_id   String? @db.VarChar(255)
+  n4user        n4user? @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_unwatch_user_43")
+
+  @@index([resource_id, resource_type], map: "ix_unwatch_resource_id_resource_type")
+  @@index([user_id], map: "ix_unwatch_user_43")
+}
+
+model user {
+  id                       BigInt    @id @default(autoincrement())
+  name                     String?   @db.VarChar(255)
+  login_id                 String    @unique @db.VarChar(255)
+  password                 String?   @db.VarChar(255)
+  password_salt            String?   @db.VarChar(255)
+  email                    String?   @unique(map: "ix_n4user_email") @db.VarChar(255)
+  remember_me              Boolean   @default(false)
+  state                    String?   @db.VarChar(7)
+  last_state_modified_date DateTime?
+  created_date             DateTime?
+  lang                     String?   @db.VarChar(255)
+  token                    String?   @unique(map: "uq_n4user_token") @db.VarChar(255)
+  is_guest                 Boolean   @default(false)
+  english_name             String?   @db.VarChar(255)
+  is_receive_notification  Boolean   @default(false)
+
+  @@index([email], map: "ix_user_email")
+  @@index([is_guest], map: "ix_user_is_guest")
+}
+
+model user_credential {
+  id              BigInt           @id @default(autoincrement())
+  user_id         BigInt?
+  login_id        String?          @db.VarChar(255)
+  email           String?          @db.VarChar(255)
+  name            String?          @db.VarChar(255)
+  active          Boolean?         @default(false)
+  email_validated Boolean?         @default(false)
+  linked_account  linked_account[]
+  n4user          n4user?          @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_user_credential_user")
+
+  @@index([user_id], map: "ix_user_credential_user_id_1")
+}
+
+model user_enrolled_organization {
+  user_id         BigInt
+  organization_id BigInt
+  n4user          n4user       @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_user_enrolled_organization_n4user_01")
+  organization    organization @relation(fields: [organization_id], references: [id], onUpdate: Restrict, map: "fk_user_enrolled_organization_organization_02")
+
+  @@id([user_id, organization_id])
+  @@index([organization_id], map: "fk_user_enrolled_organization_organization_02")
+}
+
+model user_enrolled_project {
+  user_id    BigInt
+  project_id BigInt
+  n4user     n4user  @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_user_enrolled_project_n4user_01")
+  project    project @relation(fields: [project_id], references: [id], onUpdate: Restrict, map: "fk_user_enrolled_project_project_02")
+
+  @@id([user_id, project_id])
+  @@index([project_id], map: "fk_user_enrolled_project_project_02")
+}
+
+model user_project_notification {
+  id                BigInt   @id @default(autoincrement())
+  user_id           BigInt?
+  project_id        BigInt?
+  notification_type String?  @db.VarChar(34)
+  allowed           Boolean? @default(false)
+  project           project? @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_user_project_notification_project_45")
+  n4user            n4user?  @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_user_project_notification_user_44")
+
+  @@unique([project_id, user_id, notification_type], map: "uq_user_project_notification_1")
+  @@index([project_id], map: "ix_user_project_notification_project_45")
+  @@index([user_id], map: "ix_user_project_notification_user_44")
+}
+
+model user_setting {
+  id                 BigInt  @id @default(autoincrement())
+  user_id            BigInt?
+  login_default_page String? @db.VarChar(255)
+  n4user             n4user? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_user_setting_user")
+
+  @@index([user_id], map: "ix_user_setting_user_1")
+}
+
+model user_verification {
+  id                BigInt  @id @default(autoincrement())
+  user_id           BigInt?
+  login_id          String? @db.VarChar(255)
+  verification_code String? @db.VarChar(255)
+  timestamp         BigInt?
+  n4user            n4user? @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_user_verification_user")
+
+  @@index([user_id], map: "ix_user_verification_user_1")
+  @@index([login_id, verification_code], map: "ix_user_verification_user_2")
+}
+
+model watch {
+  id            BigInt  @id @default(autoincrement())
+  user_id       BigInt?
+  resource_type String? @db.VarChar(20)
+  resource_id   String? @db.VarChar(255)
+  n4user        n4user? @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_watch_user_46")
+
+  @@index([resource_id, resource_type], map: "ix_watch_resource_id_resource_type")
+  @@index([user_id], map: "ix_watch_user_46")
+}
+
+model webhook {
+  id             BigInt           @id @default(autoincrement())
+  project_id     BigInt?
+  payload_url    String?          @db.VarChar(2000)
+  secret         String?          @db.VarChar(250)
+  created_at     DateTime?        @db.DateTime(0)
+  git_push       Boolean?
+  webhook_type   Boolean?         @default(true)
+  project        project?         @relation(fields: [project_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_webhook_project_47")
+  webhook_thread webhook_thread[]
+
+  @@index([git_push], map: "ix_webhook_git_push_only")
+  @@index([project_id], map: "ix_webhook_project_47")
+  @@index([webhook_type], map: "ix_webhook_webhook_type")
+}
+
+model webhook_thread {
+  id            BigInt    @id @default(autoincrement())
+  webhook_id    BigInt?
+  resource_type String?   @db.VarChar(20)
+  resource_id   String?   @db.VarChar(255)
+  thread_id     String?   @db.VarChar(2000)
+  created_at    DateTime? @db.DateTime(0)
+  webhook       webhook?  @relation(fields: [webhook_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_webhook_thread_webhook")
+
+  @@index([resource_type, resource_id], map: "ix_webhook_thread_resource_2")
+  @@index([webhook_id], map: "ix_webhook_thread_webhook_1")
+}
+
+model notification_send {
+  id                    BigInt    @id @default(autoincrement())
+  notification_type     String    @db.VarChar(20)
+  notification_event_id BigInt
+  platform              String    @db.VarChar(20)
+  platform_user_id      String    @db.VarChar(100)
+  receiver_id           BigInt
+  status                String?   @db.VarChar(20)
+  body                  String?   @db.Text
+  retry_count           Int?      @default(0)
+  created               DateTime? @default(dbgenerated("NOW()")) @db.DateTime
+}

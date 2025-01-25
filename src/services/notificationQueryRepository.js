@@ -1,0 +1,2 @@
+const prisma = new PrismaClient();
+
