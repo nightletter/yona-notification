@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const Sha256Hash = require('../utils/Sha256Hash');
+const kakaoworkApiClient = require('../external/kakaoworkApiClient');
 
 const prisma = new PrismaClient({
 });
@@ -14,7 +15,7 @@ prisma.$on('query', (e) => {
 
 // Home page
 router.get('/', async (req, res) => {
-  res.render('index', { 
+  res.render('index', {
     title: 'Home'
   });
 });
@@ -27,8 +28,6 @@ router.patch('/notification', async (req, res) => {
             login_id: body.loginId
         }
     })
-
-    console.log(findUser)
 
     const hashedRequestPassword = Sha256Hash.hashedPassword(body.password, findUser.password_salt);
 
@@ -80,4 +79,4 @@ router.patch('/notification', async (req, res) => {
     }
 })
 
-module.exports = router; 
+module.exports = router;

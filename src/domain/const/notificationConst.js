@@ -42,7 +42,7 @@ const NotificationPlatform = Object.freeze({
 })
 
 const NotificationStatus = Object.freeze({
-    PEND:"PEND", SUCCESS:"SUCCESS", FAIL:"FAIL"
+    CREATED:"CREATED", PEND:"PEND", SUCCESS:"SUCCESS", FAIL:"FAIL"
 })
 
 module.exports = {

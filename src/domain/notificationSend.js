@@ -1,39 +1,37 @@
-const { getNow } = require('../utils/clockHolder');
 const { NotificationStatus, NotificationType, NotificationPlatform } = require('./const/notificationConst');
 
 class NotificationSend {
     constructor(
-        notificationType,
-        notificationEventId,
+        event_type,
+        reference_id,
         platform,
         platformUserId,
         receiverId,
-        body,
+        title,
         notificationEventCreated
     ) {
-        this.notification_type = notificationType;
-        this.notification_event_id = notificationEventId;
+        this.event_type = event_type;
+        this.reference_id = reference_id;
         this.platform = platform;
         this.platform_user_id = platformUserId;
         this.receiver_id = receiverId;
-        this.status = NotificationStatus.PEND;
-        this.body = body;
+        this.status = NotificationStatus.CREATED;
+        this.title = title;
         this.retry_count = 0;
         this.created = notificationEventCreated;
     }
 
-    static ofKakaoWork(notificationEventId, n4userId, platformUserId, message, notificationEventCreated) {
+    static ofKakaoWork(event_type, reference_id, platformUserId, n4userId, title, notificationEventCreated) {
         return new NotificationSend(
-            NotificationType.PUSH,
-            notificationEventId,
+            event_type,
+            reference_id,
             NotificationPlatform.KAKAOWORK,
             platformUserId,
             n4userId,
-            message,
+            title,
             notificationEventCreated
         )
     }
 }
 
 module.exports = NotificationSend;
-

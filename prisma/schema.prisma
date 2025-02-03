@@ -961,14 +961,22 @@ model webhook_thread {
 }
 
 model notification_send {
-  id                    BigInt    @id @default(autoincrement())
-  notification_type     String    @db.VarChar(20)
-  notification_event_id BigInt
-  platform              String    @db.VarChar(20)
-  platform_user_id      String    @db.VarChar(100)
-  receiver_id           BigInt
-  status                String?   @db.VarChar(20)
-  body                  String?   @db.Text
-  retry_count           Int?      @default(0)
-  created               DateTime? @default(dbgenerated("NOW()")) @db.DateTime
+  id               BigInt                              @id @default(autoincrement())
+  insertion_method notification_send_insertion_method?
+  event_type       String?                             @db.VarChar(50)
+  reference_table  String?                             @db.VarChar(50)
+  reference_id     BigInt?
+  platform         String?                             @db.VarChar(20)
+  platform_user_id String?                             @db.VarChar(100)
+  receiver_id      BigInt?
+  status           String?                             @db.VarChar(20)
+  title            String?                             @db.VarChar(255)
+  body             String?                             @db.Text
+  retry_count      Int?                                @default(0)
+  created          DateTime?                           @db.DateTime(0)
+}
+
+enum notification_send_insertion_method {
+  SCHEDULER
+  TRIGGER
 }

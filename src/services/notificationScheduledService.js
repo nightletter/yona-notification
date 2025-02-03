@@ -2,36 +2,52 @@ const { NotificationEvent, NotificationStatus } = require("../domain/const/notif
 const { ofKakaoWork } = require("../domain/notificationSend");
 const { sendMessageByEmail } = require("../external/kakaoworkApiClient");
 const { getNow } = require("../utils/clockHolder");
-const { buildNewCommentMessage, buildIssueAssigneeChangedMessage } = require("./messageBuilder");
-const { getSendableNotificationEvents, save, getByMinutesAgo, changeStatus, increaseRetryCount } = require("./notificationSendRepository");
+const { buildNewCommentMessage, buildIssueAssigneeChangedMessage, buildIssueStateChangedMessage } = require("./messageBuilder");
+const { getSendableNotificationEvents, save, getByMinutesAgo, changeStatus, increaseRetryCount, getNotifications,
+    updateStatusAndMessage
+} = require("./notificationSendRepository");
 
 async function insertNotificationSend() {
     const notificationEvents = await getSendableNotificationEvents();
 
     for (const element of notificationEvents) {
 
-        let message = ``
-
         if (element.event_type == NotificationEvent.NEW_COMMENT) {
-            message = await buildNewCommentMessage(element.resource_id, element.created);
-
             let notificationSend = ofKakaoWork(
+                NotificationEvent.NEW_COMMENT,
                 element.id,
-                element.n4user_id,
                 element.platform_user_id,
-                message,
+                element.n4user_id,
+                '새로운 코멘트가 등록되었습니다.',
                 new Date(getNow())
             );
 
-            save(notificationSend);
-        }
-
-        if (element.event_type == NotificationEvent.ISSUE_ASSIGNEE_CHANGED) {
-            message = await buildIssueAssigneeChangedMessage(element.resource_id, element.created, element.new_value);
+            await save(notificationSend);
         }
     }
 
     return notificationEvents.length;
+}
+
+async function buildNotificationMessage() {
+    const notifications = await getNotifications(NotificationStatus.CREATED);
+
+    for (const notification of notifications) {
+        let message = ``;
+        if (notification.event_type == NotificationEvent.ISSUE_STATE_CHANGED) {
+            message = await buildIssueStateChangedMessage(notification.reference_id, notification.created);
+        }
+
+        if (notification.event_type == NotificationEvent.ISSUE_ASSIGNEE_CHANGED) {
+            message = await buildIssueAssigneeChangedMessage(notification.reference_id, notification.created);
+        }
+
+        if (notification.event_type == NotificationEvent.NEW_COMMENT) {
+            message = await buildNewCommentMessage(notification.reference_id, notification.created);
+        }
+
+        await updateStatusAndMessage(notification.id, NotificationStatus.PEND, message);
+    }
 }
 
 async function send() {
@@ -42,10 +58,10 @@ async function send() {
     let failCount = 0;
 
     for (const notification of notifications) {
-        const { id, status, platform_user_id, body } = notification;
+        const { id, status, platform_user_id, title, body, retry_count } = notification;
 
         if (status === NotificationStatus.PEND || status === NotificationStatus.FAIL) {
-            const result = await sendMessageByEmail(platform_user_id, body);
+            const result = await sendMessageByEmail(platform_user_id, title, body);
 
             if (result.success) {
                 await changeStatus(id, NotificationStatus.SUCCESS);
@@ -53,10 +69,6 @@ async function send() {
             } else {
                 await changeStatus(id, NotificationStatus.FAIL);
                 failCount++;
-            }
-
-            if (status === NotificationStatus.FAIL) {
-                await increaseRetryCount(id);
             }
         }
     }
@@ -67,5 +79,5 @@ async function send() {
 }
 
 module.exports = {
-    insertNotificationSend, send
+    insertNotificationSend, send, buildNotificationMessage
 }
