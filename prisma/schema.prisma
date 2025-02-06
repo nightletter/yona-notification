@@ -971,6 +971,7 @@ model notification_send {
   receiver_id      BigInt?
   status           String?                             @db.VarChar(20)
   title            String?                             @db.VarChar(255)
+  body_type        String?                             @db.VarChar(20)
   body             String?                             @db.Text
   retry_count      Int?                                @default(0)
   created          DateTime?                           @db.DateTime(0)

@@ -11,9 +11,11 @@ async function fetchUserByEmail(email) {
                 'Authorization': `Bearer ${process.env.KAKAOWORK_BOT_TOKEN}`
             }
         });
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         return await response.json();
     } catch (error) {
         console.error('Error fetching user by email:', error);
@@ -21,15 +23,19 @@ async function fetchUserByEmail(email) {
     }
 }
 
-async function sendMessageByEmail(email, title, message) {
+async function sendMessageByEmail(notification) {
     const url = `${process.env.KAKAOWORK_REQUEST_URL}/messages.send_by_email`
 
     try {
-        const body = JSON.stringify({
-            email: email,
-            text: title,
-            blocks: JSON.parse(message)
-        });
+        const body = {
+            email: notification.platform_user_id,
+            text: notification.title,
+            ...(notification.body_type === 'JSON' && {
+                blocks: typeof notification.body === 'string' ? JSON.parse(notification.body) : notification.body
+            })
+        };
+
+        const jsonBody = JSON.stringify(body);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -37,20 +43,20 @@ async function sendMessageByEmail(email, title, message) {
                 'Authorization': `Bearer ${process.env.KAKAOWORK_BOT_TOKEN}`,
                 'Content-Type': 'application/json'
             },
-            body: body
+            body: jsonBody
         });
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         return await response.json();
     } catch (error) {
         console.error('Error fetching user by email:', error);
-        throw error;
+        return;
     }
 }
 
 module.exports = {
-    fetchUserByEmail,
-    sendMessageByEmail
+    sendMessageByEmail, fetchUserByEmail
 };

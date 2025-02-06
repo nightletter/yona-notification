@@ -1,18 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
-const Sha256Hash = require('../utils/Sha256Hash');
-const kakaoworkApiClient = require('../external/kakaoworkApiClient');
+const Sha256Hash = require('../utils/sha256Hash');
+const kakaoworkApiClient = require('../external/kakaoWorkApiClient');
 
 const prisma = new PrismaClient({
 });
-
-prisma.$on('query', (e) => {
-    console.log('Query: ' + e.query);
-    console.log('Params: ' + e.params);
-    console.log('Duration: ' + e.duration + 'ms');
-});
-
 // Home page
 router.get('/', async (req, res) => {
   res.render('index', {
@@ -20,7 +13,7 @@ router.get('/', async (req, res) => {
   });
 });
 
-router.patch('/notification', async (req, res) => {
+router.patch('/notification', async (req, res, next) => {
     try {
     const body = req.body;
     const findUser = await prisma.n4user.findUnique({
@@ -30,6 +23,19 @@ router.patch('/notification', async (req, res) => {
     })
 
     const hashedRequestPassword = Sha256Hash.hashedPassword(body.password, findUser.password_salt);
+
+    if (findUser.password != hashedRequestPassword) {
+        return res.status(400).json({
+            message: '비밀번호가 올바르지 않습니다.'
+          });
+    }
+
+    const fetchKakaoWordUser = await kakaoworkApiClient.fetchUserByEmail(body.platformUserId);
+    if (!fetchKakaoWordUser.success) {
+        return res.status(400).json({
+            message: '카카오워크 유저 정보를 찾을 수 없습니다.'
+          });
+    }
 
     if (findUser.password == hashedRequestPassword) {
         await prisma.$transaction( async (transaction) => {

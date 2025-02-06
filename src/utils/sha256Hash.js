@@ -1,4 +1,4 @@
-const SimpleHash = require('./SimpleHash');
+const SimpleHash = require('./simpleHash');
 
 class Sha256Hash extends SimpleHash {
     static ALGORITHM_NAME = 'sha256';
@@ -37,4 +37,4 @@ class Sha256Hash extends SimpleHash {
     }
 }
 
-module.exports = Sha256Hash; 
+module.exports = Sha256Hash;

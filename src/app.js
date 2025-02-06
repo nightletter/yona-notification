@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const indexRouter = require('./routes/index');
-const scheduler = require('./services/scheduler');
+const scheduler = require('./scheduler');
 
 const app = express();
 
@@ -22,4 +22,4 @@ scheduler.initializeScheduler();
 // Routes
 app.use('/', indexRouter);
 
-module.exports = app; 
+module.exports = app;

@@ -10,7 +10,36 @@ const ISSUE_ASSIGNEE_CHANGED_HEADER = '이슈 담당자로 지정되었습니다
 const ISSUE_STATE_OPENED_HEADER = '이슈 상태가 변경되었습니다.'
 
 module.exports = {
-    buildIssueStateChangedMessage, buildNewCommentMessage, buildIssueAssigneeChangedMessage
+    buildIssueStateChangedMessage, buildNewCommentMessage, buildIssueAssigneeChangedMessage, buildUpcomingDueDate
+}
+
+async function buildUpcomingDueDate(notification) {
+    if (!notification.reference_id) return;
+
+    const fetch = await prisma.issue.findFirst({
+        select: {
+            id: true,
+            title: true,
+            project: {
+                select: {
+                    name: true
+                }
+            }
+        },
+        where: {
+            id: notification.reference_id
+        }
+    })
+
+    const message = getBlockMessageTemplate(
+        notification.title,
+        fetch.project.name,
+        fetch.title,
+        formatDefaultFormatted(notification.created),
+        `${YONA_URL}/${fetch.project.name}/issue/${fetch.id}`
+    );
+
+    return message;
 }
 
 async function buildIssueStateChangedMessage(issueId, notificationEventCreated) {

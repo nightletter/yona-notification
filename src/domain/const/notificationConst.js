@@ -7,9 +7,12 @@ const NotificationEvent = Object.freeze({
     NEW_COMMENT: "NEW_COMMENT",
     // 이슈 담당자 변경 시, 변경 전 담당자 ex) a -> b 로 변경 시 a에게 알림감.
     ISSUE_ASSIGNEE_CHANGED: "ISSUE_ASSIGNEE_CHANGED",
+    // 새로운 게시글 작성 시, 작성자 제외 프로젝트에 참여중인 회원에게 알림
+    NEW_POSTING: "NEW_POSTING",
+
+    UPCOMING_DUE_DATE: "UPCOMING_DUE_DATE",
 
     NEW_ISSUE: "NEW_ISSUE",
-    NEW_POSTING: "NEW_POSTING",
     NEW_PULL_REQUEST: "NEW_PULL_REQUEST",
     PULL_REQUEST_STATE_CHANGED: "PULL_REQUEST_STATE_CHANGED",
     NEW_REVIEW_COMMENT: "NEW_REVIEW_COMMENT",
@@ -47,4 +50,4 @@ const NotificationStatus = Object.freeze({
 
 module.exports = {
     NotificationEvent, NotificationType, NotificationPlatform, NotificationStatus
-}  
+}
