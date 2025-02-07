@@ -7,7 +7,14 @@ function initializeScheduler() {
     schedule.scheduleJob('*/10 * * * * *', async () => {
         try {
              await appendNotificationSend();
-            //  await appendUpcomingDueDateIssueWithinDays(2);
+        } catch (error) {
+            console.error('Error in appendNotificationSend:', error);
+        }
+    });
+
+    schedule.scheduleJob('0 9 * * *', async () => {
+        try {
+            await appendUpcomingDueDateIssueWithinDays(2);
         } catch (error) {
             console.error('Error in appendNotificationSend:', error);
         }
