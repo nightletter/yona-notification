@@ -39,7 +39,7 @@ function getDueDateTitle(dateDifference) {
     if (dateDifference > 0) {
         return `이슈 마감 D-${dateDifference}`;
     }
-    if (dateDifference === 0) {
+    if (dateDifference == 0) {
         return '이슈 마감 D-Day';
     }
     return '';
