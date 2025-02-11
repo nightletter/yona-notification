@@ -1,53 +1,51 @@
 const express = require('express');
 const router = express.Router();
-const { PrismaClient } = require('@prisma/client');
+const {PrismaClient} = require('@prisma/client');
 const Sha256Hash = require('../utils/sha256Hash');
 const kakaoworkApiClient = require('../external/kakaoWorkApiClient');
 
-const prisma = new PrismaClient({
-});
-// Home page
-router.get('/', async (req, res) => {
-  res.render('index', {
-    title: 'Home'
-  });
-});
+const prisma = new PrismaClient({});
 
-router.patch('/notification', async (req, res, next) => {
-    try {
-    const body = req.body;
-    const findUser = await prisma.n4user.findUnique({
+router.post('/notification/status', async (req, res) => {
+    const notifications = await prisma.n4user_notification_platform.findMany({
         where: {
-            login_id: body.loginId
+            n4user_id: req.body.id
         }
-    })
+    });
 
-    const hashedRequestPassword = Sha256Hash.hashedPassword(body.password, findUser.password_salt);
+    const result = notifications.map(notification => {
+        return {
+            ...notification,
+            id: notification.id.toString(),
+            n4user_id: notification.n4user_id.toString()
+        };
+    });
 
-    if (findUser.password != hashedRequestPassword) {
-        return res.status(400).json({
-            message: '비밀번호가 올바르지 않습니다.'
-          });
-    }
+    res.json({
+        data: result
+    });
+})
 
-    const fetchKakaoWordUser = await kakaoworkApiClient.fetchUserByEmail(body.platformUserId);
-    if (!fetchKakaoWordUser.success) {
-        return res.status(400).json({
-            message: '카카오워크 유저 정보를 찾을 수 없습니다.'
-          });
-    }
+router.post('/notification', async (req, res, next) => {
+    try {
+        const body = req.body;
+        const findUser = await prisma.n4user.findUnique({
+            where: {
+                id: body.n4userId
+            }
+        })
 
-    if (findUser.password == hashedRequestPassword) {
-        await prisma.$transaction( async (transaction) => {
-             await transaction.n4user.update({
-                where: {
-                    id: findUser.id
-                },
-                data: {
-                    is_receive_notification: body.isReceiveNotification == 'Y' ? true : false
-                }
-            })
+        if (body.platform == 'KAKAOWORK') {
+            const fetchKakaoWordUser = await kakaoworkApiClient.fetchUserByEmail(body.platformUserId);
+            if (!fetchKakaoWordUser.success) {
+                return res.status(400).json({
+                    message: '카카오워크 유저 정보를 찾을 수 없습니다.'
+                });
+            }
+        }
 
+
+        await prisma.$transaction(async (transaction) => {
             let findN4UserNotificationPlatform = await transaction.n4user_notification_platform.findFirst({
                 where: {
                     n4user_id: findUser.id,
@@ -56,7 +54,7 @@ router.patch('/notification', async (req, res, next) => {
             })
 
             if (!findN4UserNotificationPlatform) {
-                findN4UserNotificationPlatform = await transaction.n4user_notification_platform.create({
+                await transaction.n4user_notification_platform.create({
                     data: {
                         n4user_id: findUser.id,
                         platform: body.platform,
@@ -77,10 +75,11 @@ router.patch('/notification', async (req, res, next) => {
             }
         })
 
-        res.status(200).send();
-    }
-} catch(err) {
-    console.log(err)
+        res.json({
+            message: 'success'
+        })
+    } catch (err) {
+        console.log(err)
         res.status(500).send();
     }
 })

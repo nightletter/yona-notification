@@ -350,7 +350,6 @@ model n4user {
   token                                            String?                        @unique(map: "uq_n4user_token") @db.VarChar(255)
   is_guest                                         Boolean?                       @default(false)
   english_name                                     String?                        @db.VarChar(255)
-  is_receive_notification                          Boolean?                       @default(false)
   assignee                                         assignee[]
   comment_thread_n4user                            comment_thread_n4user[]
   favorite_issue                                   favorite_issue[]
