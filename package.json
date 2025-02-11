@@ -6,8 +6,8 @@
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
-    "start:local": "cp ./env/.env.dev ./.env && nodemon index.js",
-    "start:prod": "cp ./env/.env.dev ./.env && node index.js",
+    "start:dev": "cp ./env/.env.dev ./.env && nodemon index.js",
+    "start:prod": "cp ./env/.env.prod ./.env && node index.js",
     "dev": "nodemon index.js"
   },
   "dependencies": {
